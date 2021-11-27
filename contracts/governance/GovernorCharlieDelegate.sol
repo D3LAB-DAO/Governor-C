@@ -275,7 +275,7 @@ contract GovernorCharlieDelegate is
     /**
      * @notice Gets the expectation value
      */
-    function PqvExpect(uint proposalId) public view returns (
+    function pqvExpect(uint proposalId) public view returns (
         bool isSucceeded, uint aggregatedForVotes, uint aggregatedAgainstVotes, uint aggregatedAbstainVotes
     ) {        
         Proposal storage proposal = proposals[proposalId];
@@ -321,7 +321,7 @@ contract GovernorCharlieDelegate is
             return ProposalState.Active;
         } else if (/* Finalized condition */ proposal.finalizedTime == 0) {
             return ProposalState.Unfinalized;
-        } else if (/* PQV */ PqvInternal(proposalId)) {
+        } else if (/* PQV */ pqvInternal(proposalId)) {
             return ProposalState.Defeated;
         } else if (proposal.eta == 0) {
             return ProposalState.Succeeded;
@@ -334,7 +334,7 @@ contract GovernorCharlieDelegate is
         }
     }
 
-    function PqvInternal(uint proposalId) internal view returns (bool) {        
+    function pqvInternal(uint proposalId) internal view returns (bool) {        
         Proposal storage proposal = proposals[proposalId];
 
         uint N = proposal.forVotes + proposal.againstVotes + proposal.abstainVotes;
@@ -404,6 +404,8 @@ contract GovernorCharlieDelegate is
             "GovernorCharlie::finalize: random number is not yet returned"
         );
         proposal.finalizedTime = block.timestamp;
+
+        emit ProposalFinalized(proposalId);
     }
 
     /**

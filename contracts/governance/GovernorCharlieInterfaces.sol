@@ -25,7 +25,6 @@ contract GovernorCharlieEvents {
     event ProposalCanceled(uint id);
 
     /// @notice An event emitted when a proposal has been finalized
-    /// @dev
     event ProposalFinalized(uint id);
 
     /// @notice An event emitted when a proposal has been queued in the Timelock
@@ -189,8 +188,7 @@ contract GovernorCharlieDelegateStorageV1 is GovernorCharlieDelegatorStorage {
     }
 
     /// @notice Possible states that a proposal may be in
-    /// @dev Add `Unfinalized` state - represent that
-    /// the proposal is ready to get a `baseRandom` number
+    /// @dev Add `Unfinalized` state - represent that the proposal is ready to get a `baseRandom` number
     enum ProposalState {
         Pending,
         Active,
