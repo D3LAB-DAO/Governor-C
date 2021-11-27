@@ -272,7 +272,38 @@ contract GovernorCharlieDelegate is
         return proposals[proposalId].receipts[voter];
     }
 
-    // TODO: Expectation value
+    /**
+     * @notice Gets the expectation value
+     */
+    function PqvExpect(uint proposalId) public view returns (
+        bool isSucceeded, uint aggregatedForVotes, uint aggregatedAgainstVotes, uint aggregatedAbstainVotes
+    ) {        
+        Proposal storage proposal = proposals[proposalId];
+
+        uint N = proposal.forVotes + proposal.againstVotes + proposal.abstainVotes;
+
+        for (uint i = 0; i < participants[proposalId].length; i++) {
+            address participant = participants[proposalId][i];
+            Receipt memory receipt = proposal.receipts[participant];
+
+            // accumulating
+            uint256 res; // TODO: log_(maxOfVotes)(N) for optimized `e`
+            uint8 prec;
+            (res, prec) = power(receipt.votes, 1, expN, expD);
+            res /= 2 ** prec; // result
+
+            if (receipt.support == 0) {
+                aggregatedAgainstVotes += sqrt(receipt.votes) * res / N;
+            } else if (receipt.support == 1) {
+                aggregatedForVotes += sqrt(receipt.votes) * res / N;
+            } else if (receipt.support == 2) {
+                aggregatedAbstainVotes += sqrt(receipt.votes) * res / N;
+            }
+        }
+
+        // proposal.forVotes <= proposal.againstVotes || proposal.forVotes < quorumVotes
+        isSucceeded = (aggregatedForVotes <= aggregatedAgainstVotes) || (aggregatedForVotes < quorumVotes);
+    }
 
     /**
       * @notice Gets the state of a proposal
@@ -307,9 +338,9 @@ contract GovernorCharlieDelegate is
         Proposal storage proposal = proposals[proposalId];
 
         uint N = proposal.forVotes + proposal.againstVotes + proposal.abstainVotes;
-        uint96 aggregatedForVotes = 0;
-        uint96 aggregatedAgainstVotes = 0;
-        uint96 aggregatedAbstainVotes = 0;
+        uint aggregatedForVotes = 0;
+        uint aggregatedAgainstVotes = 0;
+        uint aggregatedAbstainVotes = 0;
 
         for (uint i = 0; i < participants[proposalId].length; i++) {
             address participant = participants[proposalId][i];
