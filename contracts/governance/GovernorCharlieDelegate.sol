@@ -7,7 +7,7 @@ import "../math/FractionalExponents.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
 
 /**
- * Implementation for Solidity v0.8.
+ * @title GovernorCharlieDelegate
  * 
  * References
  *
@@ -45,7 +45,6 @@ contract GovernorCharlieDelegate is
     uint public constant MAX_VOTING_DELAY = 40320; // About 1 week
 
     /// @notice The number of votes in support of a proposal required in order for a quorum to be reached and for a vote to succeed
-    /// @dev
     uint public constant quorumVotes = 400000e18; // 400,000 = 4% of Comp
 
     /// @notice The maximum number of actions that can be included in a proposal
@@ -66,7 +65,7 @@ contract GovernorCharlieDelegate is
      * Key Hash: 0x6e75b569a01ef56d18cab6a8e71e6600d6ce853834d4a5748b720d06f878b3a4
      */
     bytes32 public constant keyHash = 0x6e75b569a01ef56d18cab6a8e71e6600d6ce853834d4a5748b720d06f878b3a4;
-    uint public fee = 0.0001 * 10 ** 18; // 0.0001 LINK (Varies by network) // upgradable
+    uint public fee = 0.0001 * 10 ** 18; // 0.0001 LINK (Varies by network)
 
     function feeUpdate(uint newFee) public {
         require(msg.sender == admin, "GovernorCharlie::feeUpdate: admin only");
@@ -176,7 +175,7 @@ contract GovernorCharlieDelegate is
         newProposal.forVotes = 0;
         newProposal.againstVotes = 0;
         newProposal.abstainVotes = 0;
-        newProposal.maxOfVotes = 0;
+        // newProposal.maxOfVotes = 0; // TODO
 
         newProposal.canceled = false;
         newProposal.executed = false;
@@ -273,6 +272,8 @@ contract GovernorCharlieDelegate is
         return proposals[proposalId].receipts[voter];
     }
 
+    // TODO: Expectation value
+
     /**
       * @notice Gets the state of a proposal
       * @param proposalId The id of the proposal
@@ -304,10 +305,8 @@ contract GovernorCharlieDelegate is
 
     function PqvInternal(uint proposalId) internal view returns (bool) {        
         Proposal storage proposal = proposals[proposalId];
-        
-        // PQV
-        uint N = proposal.forVotes + proposal.againstVotes + proposal.abstainVotes;
 
+        uint N = proposal.forVotes + proposal.againstVotes + proposal.abstainVotes;
         uint96 aggregatedForVotes = 0;
         uint96 aggregatedAgainstVotes = 0;
         uint96 aggregatedAbstainVotes = 0;
@@ -317,22 +316,18 @@ contract GovernorCharlieDelegate is
             Receipt memory receipt = proposal.receipts[participant];
 
             // timestamp check
-            FlagedRandom memory flagedRandom = flagedRandoms[receipt.myFlagedRandom];
-            if(flagedRandom.returnTimestamp > proposal.finalizedTime) {
-                continue;
-            }
+            FlagedRandom memory indivRandom = flagedRandoms[receipt.myFlagedRandom]; // Individual random number
+            if(indivRandom.returnTimestamp > proposal.finalizedTime) { continue; }
+            else if (indivRandom.returnTimestamp == 0) { continue; }
 
             // random
-            uint finalRandomValue = flagedRandoms[proposal.baseFlagedRandom].randomValue ^ flagedRandom.randomValue;
-            
-            uint256 res;
+            FlagedRandom memory baseRandom = flagedRandoms[proposal.baseFlagedRandom]; // Base random number
+            uint finalRandomValue = baseRandom.randomValue ^ indivRandom.randomValue;
+            uint256 res; // TODO: log_(maxOfVotes)(N) for optimized `e`
             uint8 prec;
             (res, prec) = power(receipt.votes, 1, expN, expD);
-            res /= 2 ** prec;
-            
-            if (res /* receipt.votes ** 2 */ <= (finalRandomValue % N)) {
-                continue;
-            }
+            res /= 2 ** prec; // result
+            if (res <= (finalRandomValue % N)) { continue; }
 
             // accumulating
             if (receipt.support == 0) {
@@ -348,24 +343,8 @@ contract GovernorCharlieDelegate is
         return (aggregatedForVotes <= aggregatedAgainstVotes) || (aggregatedForVotes < (quorumVotes * aggregatedForVotes / proposal.forVotes));
     }
 
-    /** 
-     * @dev Computes sqrt of `x`
-     */
-    function sqrt(uint96 x) public pure returns(uint96 y) {
-        uint96 z = x + 1;
-        z /= 2;
-
-        y = x;
-        while (z < y) {
-            y = z;
-            z = x / z + z;
-            z /= 2;
-        }
-    }
-
     /**
-     * @notice
-     * @dev
+     * @notice Request base random
      */
     function requestBaseFlagedRandom(uint proposalId) external {
         require(
@@ -381,8 +360,7 @@ contract GovernorCharlieDelegate is
     }
 
     /**
-     * @notice
-     * @dev
+     * @notice Finalize active state for pqv round
      */
     function finalize(uint proposalId) external {
         require(
@@ -444,9 +422,10 @@ contract GovernorCharlieDelegate is
         require(receipt.hasVoted == false, "GovernorCharlie::castVoteInternal: voter already voted");
         uint96 votes = comp.getPriorVotes(voter, proposal.startBlock);
 
-        if (proposal.maxOfVotes < votes) {
-            proposal.maxOfVotes = votes;
-        }
+        // TODO
+        // if (proposal.maxOfVotes < votes) {
+        //     proposal.maxOfVotes = votes;
+        // }
 
         if (support == 0) {
             proposal.againstVotes = proposal.againstVotes + votes;
@@ -578,5 +557,20 @@ contract GovernorCharlieDelegate is
 
         emit NewAdmin(oldAdmin, admin);
         emit NewPendingAdmin(oldPendingAdmin, pendingAdmin);
+    }
+}
+
+/** 
+ * @dev Computes sqrt of `x`
+ */
+function sqrt(uint96 x) pure returns(uint96 y) {
+    uint96 z = x + 1;
+    z /= 2;
+
+    y = x;
+    while (z < y) {
+        y = z;
+        z = x / z + z;
+        z /= 2;
     }
 }

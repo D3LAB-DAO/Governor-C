@@ -106,8 +106,7 @@ contract GovernorCharlieDelegateStorageV1 is GovernorCharlieDelegatorStorage {
     /// @notice The latest proposal for each proposer
     mapping (address => uint) public latestProposalIds;
 
-
-    // XXX
+    // Chainlink Random
     struct FlagedRandom {
         uint randomValue;
         uint returnTimestamp;
@@ -142,28 +141,21 @@ contract GovernorCharlieDelegateStorageV1 is GovernorCharlieDelegatorStorage {
         /// @notice The block at which voting ends: votes must be cast prior to this block
         uint endBlock;
 
-
-
-
-        /// @notice
-        /// @dev
-        /// bytes32 to FlagedRandom
+        /// @notice bytes32 to FlagedRandom
         bytes32 baseFlagedRandom;
 
-
-        /// @notice Current number of votes in favor of this proposal
+        /// @notice Total number of votes in favor of this proposal
         uint forVotes;
 
-        /// @notice Current number of votes in opposition to this proposal
+        /// @notice Total number of votes in opposition to this proposal
         uint againstVotes;
 
-        /// @notice Current number of votes for abstaining for this proposal
+        /// @notice Total number of votes for abstaining for this proposal
         uint abstainVotes;
 
-
-        /// @dev
-        uint maxOfVotes;
-
+        // TODO
+        // /// @notice Maximum value among all votes
+        // uint maxOfVotes;
 
         /// @notice Flag marking whether the proposal has been canceled
         bool canceled;
@@ -172,17 +164,14 @@ contract GovernorCharlieDelegateStorageV1 is GovernorCharlieDelegatorStorage {
         bool executed;
 
         /// @notice Flag marking whether the proposal has been finalized for aggregating
-        /// @dev
         uint finalizedTime;
 
         /// @notice Receipts of ballots for the entire set of voters
         mapping (address => Receipt) receipts;
     }
 
-
-    /// @dev
+    /// @notice Keys for `receipts` mapping
     mapping (uint => address[]) public participants;
-
 
     /// @notice Ballot receipt record for a voter
     struct Receipt {
@@ -195,8 +184,7 @@ contract GovernorCharlieDelegateStorageV1 is GovernorCharlieDelegatorStorage {
         /// @notice The number of votes the voter had, which were cast
         uint96 votes;
 
-        /// @notice
-        /// @dev
+        /// @notice Indivisual random number
         bytes32 myFlagedRandom;
     }
 
@@ -212,7 +200,7 @@ contract GovernorCharlieDelegateStorageV1 is GovernorCharlieDelegatorStorage {
         Queued,
         Expired,
         Executed,
-        Unfinalized
+        Unfinalized // for PQV's random aggregation round
     }
 }
 
