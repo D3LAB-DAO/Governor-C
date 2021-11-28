@@ -1,14 +1,16 @@
 # Governor-C
 
+![demo](docs/images/governance_demo.gif)
+
 TBA
 
-# Probabilistic Quadratic Voting
+## Probabilistic Quadratic Voting
 
 > [*Junmo Lee, Sanghyeon Park, and Soo-Mook Moon. "Secure Voting System with Sybil Attack Resistance using Probabilistic Quadratic Voting and Trusted Execution Environment." KIISE Transactions on Computing Practices 27.8 (2021): 382-387.*](https://www.dbpia.co.kr/Journal/articleDetail?nodeId=NODE10594648)
 
 The details are in the [`PQV.md`](./docs/PQV.md).
 
-# Governor Charlie
+## Governor Charlie
 
 TBA
 
@@ -22,8 +24,8 @@ TBA
 
 Luke Park (Sanghyeon Park)
 
-> 🖥 https://github.com/lukepark327\
-✉️ lukepark327@gmail.com
+> [🖥 https://github.com/lukepark327](https://github.com/lukepark327)\
+> [✉️ lukepark327@gmail.com](mailto:lukepark327@gmail.com)
 
 # License
 
