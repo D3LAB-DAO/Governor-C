@@ -56,14 +56,12 @@ contract GovernorCharlieDelegate is
     /// @notice The EIP-712 typehash for the ballot struct used by the contract
     bytes32 public constant BALLOT_TYPEHASH = keccak256("Ballot(uint256 proposalId,uint8 support)");
 
-    /**
-     * Constructor inherits VRFConsumerBase
-     * 
-     * Network: Polygon (Matic)
-     * Chainlink VRF Coordinator address: 0x8C7382F9D8f56b33781fE506E897a4F1e2d17255
-     * LINK token address:                0x326C977E6efc84E512bB9C30f76E30c160eD06FB
-     * Key Hash: 0x6e75b569a01ef56d18cab6a8e71e6600d6ce853834d4a5748b720d06f878b3a4
-     */
+    // Constructor inherits VRFConsumerBase
+    // 
+    // Network: Polygon (Matic)
+    // Chainlink VRF Coordinator address: 0x8C7382F9D8f56b33781fE506E897a4F1e2d17255
+    // LINK token address:                0x326C977E6efc84E512bB9C30f76E30c160eD06FB
+    // Key Hash: 0x6e75b569a01ef56d18cab6a8e71e6600d6ce853834d4a5748b720d06f878b3a4
     bytes32 public constant keyHash = 0x6e75b569a01ef56d18cab6a8e71e6600d6ce853834d4a5748b720d06f878b3a4;
     uint public fee = 0.0001 * 10 ** 18; // 0.0001 LINK (Varies by network)
 
@@ -73,6 +71,7 @@ contract GovernorCharlieDelegate is
     }
 
     // e = 1.05
+    // TODO: [Governor-D] Dynamic adjustment of `e`
     uint32 public expN = 105;
     uint32 public expD = 100;
 
@@ -177,7 +176,7 @@ contract GovernorCharlieDelegate is
         newProposal.forVotes = 0;
         newProposal.againstVotes = 0;
         newProposal.abstainVotes = 0;
-        // newProposal.maxOfVotes = 0; // TODO
+        // newProposal.maxOfVotes = 0; // TODO: [Governor-D]
 
         newProposal.canceled = false;
         newProposal.executed = false;
@@ -289,7 +288,7 @@ contract GovernorCharlieDelegate is
             Receipt memory receipt = proposal.receipts[participant];
 
             // accumulating
-            uint256 res; // TODO: log_(maxOfVotes)(N) for optimized `e`
+            uint256 res; // TODO: [Governor-D] log_(maxOfVotes)(N) for optimized `e`
             uint8 prec;
             (res, prec) = power(receipt.votes, 1, expN, expD);
             res /= 2 ** prec; // result
@@ -356,7 +355,7 @@ contract GovernorCharlieDelegate is
             // random
             FlagedRandom memory baseRandom = flagedRandoms[proposal.baseFlagedRandom]; // Base random number
             uint finalRandomValue = baseRandom.randomValue ^ indivRandom.randomValue;
-            uint256 res; // TODO: log_(maxOfVotes)(N) for optimized `e`
+            uint256 res; // TODO: [Governor-D] log_(maxOfVotes)(N) for optimized `e`
             uint8 prec;
             (res, prec) = power(receipt.votes, 1, expN, expD);
             res /= 2 ** prec; // result
@@ -457,7 +456,7 @@ contract GovernorCharlieDelegate is
         require(receipt.hasVoted == false, "GovernorCharlie::castVoteInternal: voter already voted");
         uint96 votes = comp.getPriorVotes(voter, proposal.startBlock);
 
-        // TODO
+        // TODO: [Governor-D]
         // if (proposal.maxOfVotes < votes) {
         //     proposal.maxOfVotes = votes;
         // }

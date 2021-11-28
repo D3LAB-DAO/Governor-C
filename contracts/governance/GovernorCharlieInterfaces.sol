@@ -1,14 +1,14 @@
+/*
+    References
+    
+    https://github.com/compound-finance/compound-protocol/blob/master/contracts/Governance/GovernorBravoInterfaces.sol
+*/
+
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
 
-/**
- * Implementation for Solidity v0.8.
- * 
- * References
- *
- * - https://github.com/compound-finance/compound-protocol/blob/master/contracts/Governance/GovernorBravoInterfaces.sol
- */
+
 contract GovernorCharlieEvents {
     /// @notice An event emitted when a new proposal is created
     event ProposalCreated(uint id, address proposer, address[] targets, uint[] values, string[] signatures, bytes[] calldatas, uint startBlock, uint endBlock, string description);

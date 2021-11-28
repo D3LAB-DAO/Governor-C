@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 import "./GovernorCharlieInterfaces.sol";
 
 /**
- * Implementation for Solidity v0.8.
+ * @title GovernorCharlieDelegator
  * 
  * References
  *
