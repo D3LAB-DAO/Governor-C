@@ -1,4 +1,4 @@
-# Fully Decentralized Sybil-Resistant Quadratic Voting System
+# Governor C: Fully Decentralized Sybil-Resistant Quadratic Voting System
 
 > based on [Chainlink-VRF](https://docs.chain.link/docs/chainlink-vrf/) and [Polygon (Matic)](https://polygon.technology)
 
