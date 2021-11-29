@@ -30,12 +30,12 @@ The more details are in the [`PQV.md`](./docs/PQV.md) and [`PQV-simulator`](http
 
 ## Governor Charlie
 
-> Programing language: Solidity v0.8\
-> Openzeppelin and Chainlink packages are used
+* Programing language: Solidity v0.8
+* Openzeppelin and Chainlink packages are used
 
 To implement the probability factor of PQV without compromising decentralized manner, we use Chainlink-VRF. The contract receives random number everytime user cast a vote and this will make contract more decentralized and cost-efficient.
 
-Follows Compound governance module standard: current DAOs using compound module based on Governor B(bravo) can easily apply our new solution governor C which is developed under the same standard.
+It follows Compound governance module standard. Therefore current DAOs using compound module based on Governor Bravo can easily apply our new solution which is developed under the same standard.
 
 The more details are in the [`GovernorCharlie.md`](./docs/GovernorCharlie.md).
 
@@ -65,11 +65,12 @@ We use Polygon (Matic) to enhance scalability of application by using blockchain
 
 ## Governor Delta
 
-> Work-In-Progress
+> Work-In-Progress\
+> D stands for Dynamic
 
-D stands for Dynamic.
+For now, the hyperparameter *`e`* of PQV is provided by admin as constant. Though we did multiple simulating to get the most suitable value, it doesn't work optimally for all situations.
 
-TBA
+In `Governor D`, the *`e`* will be dynamically set. It is set to the most appropriate value according to the voting status.
 
 # Conclusion
 
