@@ -35,6 +35,8 @@ The more details are in the [`PQV.md`](./docs/PQV.md) and [`PQV-simulator`](http
 
 To implement the probability factor of PQV without compromising decentralized manner, we use Chainlink-VRF. The contract receives random number everytime user cast a vote and this will make contract more decentralized and cost-efficient.
 
+![Overview](./docs/images/Governor_C_overview.png)
+
 It follows Compound governance module standard. Therefore current DAOs using compound module based on Governor Bravo can easily apply our new solution which is developed under the same standard.
 
 The more details are in the [`GovernorCharlie.md`](./docs/GovernorCharlie.md).
