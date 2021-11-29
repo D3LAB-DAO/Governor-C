@@ -30,4 +30,8 @@ We introduce a secure voting system through **Probabilistic Quadratic Voting (PQ
 
 ![](./images/PQV_Math.png)
 
+<!--
 TBA
+
+*`e`*
+-->

@@ -2,7 +2,7 @@
 
 > based on [Chainlink-VRF](https://docs.chain.link/docs/chainlink-vrf/) and [Polygon (Matic)](https://polygon.technology)
 
-## Abstract
+# Abstract
 
 Fair voting system is really important for DAO. However, even the most developed voting system, Quadratic Voting (QV), is exposed to the risk of sybil attack.
 
@@ -11,6 +11,8 @@ Therefore we develops **```Governor C```** contract which is a fully decentraliz
 For the perfect decentralization, we used Chainlink-VRF and scalable blockchain Polygon (Matic).
 
 # Features
+
+![overview](docs/images/overview.png)
 
 The goal of this project is activate the whole decentralized DAO ecosystem. For doing it, we create and built three novel things:
 
@@ -35,7 +37,7 @@ The more details are in the [`PQV.md`](./docs/PQV.md) and [`PQV-simulator`](http
 
 To implement the probability factor of PQV without compromising decentralized manner, we use Chainlink-VRF. The contract receives random number everytime user cast a vote and this will make contract more decentralized and cost-efficient.
 
-![Overview](./docs/images/Governor_C_overview.png)
+![Governor-C-overview](./docs/images/Governor_C_overview.png)
 
 It follows Compound governance module standard. Therefore current DAOs using compound module based on Governor Bravo can easily apply our new solution which is developed under the same standard.
 
@@ -74,13 +76,13 @@ For now, the hyperparameter *`e`* of PQV is provided by admin as constant. Thoug
 
 In `Governor D`, the *`e`* will be dynamically set. It is set to the most appropriate value according to the voting status.
 
-# Conclusion
+# Thanks for your interest
 
 By providing scalable and decentralized open source solution, we want to activate the entire DAO ecosystem based on fair decision making system. Make more people to engage in healthy governance and community though our solution.
 
-We proposed PQV method, smart contracts implementing it, and the service examples. Chainlink-VRF and Polygon (Matic) were used to achieve higher decentralization level.
+We propose PQV method, smart contracts implementing it, and the service examples. Chainlink-VRF and Polygon (Matic) were used to achieve higher decentralization level.
 
-Team DAppO is continuing research and development to improve the governance system more efficiently and safely. Please look forward to our next solution, `Governor D`!
+Team DAppO is continuing research and development to improve the governance system more efficiently and safely. Please look forward to our next solution, `Governor D`.
 
 # Contact
 
