@@ -41,7 +41,7 @@ To implement the probability factor of PQV without compromising decentralized ma
 
 It follows Compound governance module standard. Therefore current DAOs using compound module based on Governor Bravo can easily apply our new solution which is developed under the same standard.
 
-The more details are in the [`GovernorCharlie.md`](./docs/GovernorCharlie.md).
+The more details are in the [`docs/governance`](./docs/governance).
 
 ## Example of DAO Service
 
