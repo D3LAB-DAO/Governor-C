@@ -1,6 +1,6 @@
 # Fully Decentralized Sybil-Resistant Quadratic Voting System
 
-> based on [Chainlink-VRF](https://docs.chain.link/docs/chainlink-vrf/) and [Matic](https://polygon.technology)
+> based on [Chainlink-VRF](https://docs.chain.link/docs/chainlink-vrf/) and [Polygon (Matic)](https://polygon.technology)
 
 ## Abstract
 
@@ -8,7 +8,7 @@ Fair voting system is really important for DAO. However, even the most developed
 
 Therefore we develops **```Governor C```** contract which is a fully decentralized sybil resistant quadratic voting system based on Chainlink-VRF. To achieve sybil resistant, we suggest Probabilistic Quadratic Voting (PQV) method which apply probabilitic element on QV and make it always a loss to do sybil attack.
 
-For the perfect decentralization, we used Chainlink-VRF and scalable blockchain Matic.
+For the perfect decentralization, we used Chainlink-VRF and scalable blockchain Polygon (Matic).
 
 # Features
 
@@ -26,27 +26,58 @@ Make it always a loss to do sybil attack by applying probabilitic element on qua
 
 QV and PQV shows high similarity through simulation. Also PQV's sybil resistance has been proved.
 
-The details are in the [`PQV.md`](./docs/PQV.md) and [`PQV-simulator`](https://github.com/Team-DAppO/PQV-simulator).
+The more details are in the [`PQV.md`](./docs/PQV.md) and [`PQV-simulator`](https://github.com/Team-DAppO/PQV-simulator).
 
 ## Governor Charlie
 
-The details are in the [`GovernorCharlie.md`](./docs/GovernorCharlie.md).
+> Programing language: Solidity v0.8\
+> Openzeppelin and Chainlink packages are used
 
-## Example Service
+To implement the probability factor of PQV without compromising decentralized manner, we use Chainlink-VRF. The contract receives random number everytime user cast a vote and this will make contract more decentralized and cost-efficient.
+
+Follows Compound governance module standard: current DAOs using compound module based on Governor B(bravo) can easily apply our new solution governor C which is developed under the same standard.
+
+The more details are in the [`GovernorCharlie.md`](./docs/GovernorCharlie.md).
+
+## Example of DAO Service
+
+A demonstration of the bundle of `Governor C` contracts.
+
+We use Polygon (Matic) to enhance scalability of application by using blockchain with lower fees and higher speed.
 
 ![demo](docs/images/governance_demo.gif)
 
-TBA
+* You can connect your Metamask wallet directly with the governance site without the KYC which is the centralized proof of identity process. 
+
+* Each proposal can have various stages of status which are active, executed and finalized in this demo.
+
+* User can cast a vote on the proposal with active status.
+
+* The number of votes in front page shows expected value, not the real number of votes. There are also the details of the proposals. For example, user can check the start block number and the end block number of the proposal. After the time of end block created, the proposal will be changed as unfinalized status.
+
+* The finalized proposal is the proposal passed valid voting period, but probabilitic factor of PQV is not applied yet. If someone triggers the calculation of PQV with transaction, it will show the state of succeeded or defeated. 
+
+* To make the status 'succeeded', number of votes on 'for side' of the proposal should be larger thant 'against side'. In addition, the sum of 'for side' votes must be above a certain threshold. Now the result and the expected value of votes turns to the real result. In this demo, the number under 'for side' has changed.
+
+* After the proposal turns to succeeded status, the proposal becomes queued through smart contract named [```Timelock```](./contracts/governance/Timelock.sol). When finally all the process executed, the status turns to 'executed'.
 
 # Future Work
 
 ## Governor Delta
 
-> Work-In-Progress.
+> Work-In-Progress
 
 D stands for Dynamic.
 
 TBA
+
+# Conclusion
+
+By providing scalable and decentralized open source solution, we want to activate the entire DAO ecosystem based on fair decision making system. Make more people to engage in healthy governance and community though our solution.
+
+We proposed PQV method, smart contracts implementing it, and the service examples. Chainlink-VRF and Polygon (Matic) were used to achieve higher decentralization level.
+
+Team DAppO is continuing research and development to improve the governance system more efficiently and safely. Please look forward to our next solution, `Governor D`!
 
 # Contact
 
