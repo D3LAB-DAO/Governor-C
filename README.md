@@ -72,7 +72,7 @@ We use Polygon (Matic) to enhance scalability of application by using blockchain
 > Work-In-Progress\
 > D stands for Dynamic
 
-For now, the hyperparameter *`e`* of PQV is provided by admin as constant. Though we did multiple simulating to get the most suitable value, it doesn't work optimally for all situations.
+For now, the hyperparameter *`e`* which adjusts the degree of acceptance on PQV is provided by admin as constant. Though we did multiple simulating to get the most suitable value, it doesn't work optimally for all situations.
 
 In `Governor D`, the *`e`* will be dynamically set. It is set to the most appropriate value according to the voting status.
 
