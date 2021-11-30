@@ -2,6 +2,14 @@
 
 > based on [Chainlink-VRF](https://docs.chain.link/docs/chainlink-vrf/) and [Polygon (Matic)](https://polygon.technology)
 
+## Chainlink Fall Hackathon 2021
+
+[<img src="https://img.youtube.com/vi/VWdOQZDfxDE/0.jpg" width=100%>](https://youtu.be/VWdOQZDfxDE)
+
+Click on the image above to see the presentation and demonstration.
+
+Submitted to [Chainlink Fall Hackathon 2021](https://devpost.com/software/governor-c-sybil-resistant-quadratic-voting-system).
+
 # Abstract
 
 Fair voting system is really important for DAO. However, even the most developed voting system, Quadratic Voting (QV), is exposed to the risk of sybil attack.
@@ -37,7 +45,10 @@ The more details are in the [`PQV.md`](./docs/PQV.md) and [`PQV-simulator`](http
 
 To implement the probability factor of PQV without compromising decentralized manner, we use Chainlink-VRF. The contract receives random number everytime user cast a vote and this will make contract more decentralized and cost-efficient.
 
+<!--
 ![Governor-C-overview](./docs/images/Governor_C_overview.png)
+-->
+<img src="./docs/images/Governor_C_overview.png" width=100%>
 
 It follows Compound governance module standard. Therefore current DAOs using compound module based on Governor Bravo can easily apply our new solution which is developed under the same standard.
 
