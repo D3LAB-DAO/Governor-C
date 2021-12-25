@@ -36,7 +36,7 @@ Make it always a loss to do sybil attack by applying probabilitic element on qua
 
 QV and PQV shows high similarity through simulation. Also PQV's sybil resistance has been proved.
 
-The more details are in the [`PQV.md`](./docs/PQV.md) and [`PQV-simulator`](https://github.com/Team-DAppO/PQV-simulator).
+The more details are in the [`PQV.md`](./docs/PQV.md) and [`PQV-simulator`](https://github.com/DLAB-DAO/PQV-simulator).
 
 ## Governor Charlie
 
