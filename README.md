@@ -10,6 +10,9 @@ Click on the image above to see the presentation and demonstration.
 
 Submitted to [Chainlink Fall Hackathon 2021](https://devpost.com/software/governor-c-sybil-resistant-quadratic-voting-system).
 
+> WINNER at ```Chainlink DAO Prize```\
+> WINNER at ```Polygon - Best DAO/Tooling DApp```
+
 # Abstract
 
 Fair voting system is really important for DAO. However, even the most developed voting system, Quadratic Voting (QV), is exposed to the risk of sybil attack.
