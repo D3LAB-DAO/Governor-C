@@ -96,7 +96,7 @@ By providing scalable and decentralized open source solution, we want to activat
 
 We propose PQV method, smart contracts implementing it, and the service examples. Chainlink-VRF and Polygon (Matic) were used to achieve higher decentralization level.
 
-Team D.LAB (previous DAppO) is continuing research and development to improve the governance system more efficiently and safely. Please look forward to our next solution, `Governor D`.
+Team D3LAB (previous DAppO) is continuing research and development to improve the governance system more efficiently and safely. Please look forward to our next solution, `Governor D`.
 
 # Contact
 
