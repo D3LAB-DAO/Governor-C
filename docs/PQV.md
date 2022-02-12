@@ -6,7 +6,7 @@
 
 Everyone equally has only one vote.
 
-However, in this way, it is simply determined by a majority vote, and there is no way to reflect an individual's desperation because they have same voting power.
+However, in this way, it is simply determined by a majority vote, and there is no way to reflect an individual's aspiration because they have same voting power.
 
 ## One-person Multi-vote Method
 
