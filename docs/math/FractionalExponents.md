@@ -92,5 +92,3 @@ Detailed description:
 - For example: e^5.521692859 = e^(4 + 1 + 0.5 + 0.021692859) = e^4 * e^1 * e^0.5 * e^0.021692859
 
 
-
-

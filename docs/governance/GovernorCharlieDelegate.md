@@ -29,9 +29,9 @@ Chainlink: Callback function used by VRF Coordinator
 
 
 
-### `initialize(address timelock_, address comp_, uint256 votingPeriod_, uint256 votingDelay_, uint256 proposalThreshold_)` (public)
+### `initialize(address timelock_, address comp_, uint256 votingPeriod_, uint256 votingDelay_, uint256 proposalThreshold_, uint256 aggregatingPeriod_)` (public)
 
-Used to initialize the contract during delegator contructor
+Used to initialize the contract during delegator constructor
 
 
 
@@ -77,7 +77,7 @@ Gets actions of a proposal
 
 
 
-### `getReceipt(uint256 proposalId, address voter) → struct GovernorCharlieDelegateStorageV1.Receipt` (external)
+### `getReceipt(uint256 proposalId, address voter) → struct GovernorBravoDelegateStorageV1.Receipt` (external)
 
 Gets the receipt for a voter on a given proposal
 
@@ -86,32 +86,53 @@ Gets the receipt for a voter on a given proposal
 
 ### `pqvExpect(uint256 proposalId) → bool isSucceeded, uint256 aggregatedForVotes, uint256 aggregatedAgainstVotes, uint256 aggregatedAbstainVotes` (public)
 
-Gets the expectation value
+Gets the expectation value (EQV)
 
 
 
-### `state(uint256 proposalId) → enum GovernorCharlieDelegateStorageV1.ProposalState` (public)
+### `state(uint256 proposalId) → enum GovernorBravoDelegateStorageV1.ProposalState` (public)
 
 Gets the state of a proposal
 
 
 
 
-### `pqvInternal(uint256 proposalId) → bool` (internal)
+### `finalizeVote(uint256 proposalId)` (external)
+
+Finalize a vote for a proposal
+
+
+
+
+### `finalizeVoteBySig(uint256 proposalId, uint8 v, bytes32 r, bytes32 s)` (external)
+
+Finalize a vote for a proposal by signature
+
+
+External function that accepts EIP-712 signatures for finalizing on proposals.
+
+### `finalizeVoteInternal(address voter, uint256 proposalId) → uint96` (internal)
+
+Internal function that caries out finalizing logic
+
+
+
+
+### `pqvResultInternal(uint256 proposalId) → bool` (internal)
 
 
 
 
 
-### `requestBaseFlagedRandom(uint256 proposalId)` (external)
+### `isFinalizeInternal(uint256 proposalId) → bool` (internal)
 
-Request base random
+Return false if unfinalized
 
 
 
-### `finalize(uint256 proposalId)` (external)
+### `finalize(uint256 proposalId)` (public)
 
-Finalize active state for pqv round
+Finalize the proposal
 
 
 
@@ -164,6 +185,13 @@ Admin function for setting the voting period
 
 
 
+### `_setAggregatingPeriod(uint256 newAggregatingPeriod)` (external)
+
+Admin function for setting the aggregating period
+
+
+
+
 ### `_setProposalThreshold(uint256 newProposalThreshold)` (external)
 
 Admin function for setting the proposal threshold
@@ -200,7 +228,5 @@ Accepts transfer of admin rights. msg.sender must be pendingAdmin
 
 
 Admin function for pending admin to accept role and update admin
-
-
 
 
