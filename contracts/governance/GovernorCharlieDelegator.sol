@@ -1,5 +1,4 @@
-// SPDX-License-Identifier: MIT
-
+// SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.0;
 
 import "./GovernorCharlieInterfaces.sol";
@@ -13,13 +12,13 @@ import "./GovernorCharlieInterfaces.sol";
  */
 contract GovernorCharlieDelegator is GovernorCharlieDelegatorStorage, GovernorCharlieEvents {
 	constructor(
-		address timelock_,
-		address comp_,
-		address admin_,
-        address implementation_,
-        uint votingPeriod_,
-        uint votingDelay_,
-        uint proposalThreshold_
+			address timelock_,
+			address comp_,
+			address admin_,
+	        address implementation_,
+	        uint votingPeriod_,
+	        uint votingDelay_,
+            uint proposalThreshold_
     ) {
 
         // Admin set to msg.sender for initialization

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: BSD-3-Clause
 
 pragma solidity ^0.8.0;
 
@@ -14,7 +14,7 @@ import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
  * - https://github.com/compound-finance/compound-protocol/blob/master/contracts/Governance/GovernorBravoDelegate.sol
  */
 contract GovernorCharlieDelegate is
-    GovernorCharlieDelegateStorageV2,
+    GovernorCharlieDelegateStorage,
     GovernorCharlieEvents,
     VRFConsumerBase(
         0x8C7382F9D8f56b33781fE506E897a4F1e2d17255, // VRF Coordinator
@@ -22,27 +22,35 @@ contract GovernorCharlieDelegate is
     ),
     FractionalExponents
 {
+    /// @notice The number of blocks to represent 1 day in Polygon
+    uint public constant ONE_DAY_BLOCKS = 86400 / 2; // blocks
 
     /// @notice The name of this contract
     string public constant name = "Compound Governor Charlie";
 
     /// @notice The minimum setable proposal threshold
-    uint public constant MIN_PROPOSAL_THRESHOLD = 50000e18; // 50,000 Comp
+    uint public constant MIN_PROPOSAL_THRESHOLD = 1000e18; // 1,000 Comp
 
     /// @notice The maximum setable proposal threshold
     uint public constant MAX_PROPOSAL_THRESHOLD = 100000e18; //100,000 Comp
 
     /// @notice The minimum setable voting period
-    uint public constant MIN_VOTING_PERIOD = 5760; // About 24 hours
+    uint public constant MIN_VOTING_PERIOD = ONE_DAY_BLOCKS; // About 24 hours
 
     /// @notice The max setable voting period
-    uint public constant MAX_VOTING_PERIOD = 80640; // About 2 weeks
+    uint public constant MAX_VOTING_PERIOD = ONE_DAY_BLOCKS * 14; // About 2 weeks
 
     /// @notice The min setable voting delay
     uint public constant MIN_VOTING_DELAY = 1;
 
     /// @notice The max setable voting delay
-    uint public constant MAX_VOTING_DELAY = 40320; // About 1 week
+    uint public constant MAX_VOTING_DELAY = ONE_DAY_BLOCKS * 7; // About 1 week
+
+    /// @notice The min setable aggregating period
+    uint public constant MIN_AGGREGATING_PERIOD = ONE_DAY_BLOCKS; // About 24 hours
+
+    /// @notice The max setable aggregating period
+    uint public constant MAX_AGGREGATING_PERIOD = ONE_DAY_BLOCKS * 14; // About 2 weeks
 
     /// @notice The number of votes in support of a proposal required in order for a quorum to be reached and for a vote to succeed
     uint public constant quorumVotes = 400000e18; // 400,000 = 4% of Comp
@@ -55,6 +63,9 @@ contract GovernorCharlieDelegate is
 
     /// @notice The EIP-712 typehash for the ballot struct used by the contract
     bytes32 public constant BALLOT_TYPEHASH = keccak256("Ballot(uint256 proposalId,uint8 support)");
+
+    /// @notice The EIP-712 typehash for the finalizing struct used by the contract
+    bytes32 public constant FINALIZE_TYPEHASH = keccak256("Finalize(uint256 proposalId)");
 
     // Constructor inherits VRFConsumerBase
     // 
@@ -71,7 +82,7 @@ contract GovernorCharlieDelegate is
     }
 
     // e = 1.05
-    // TODO: [Governor-D] Dynamic adjustment of `e`
+    // TODO: Dynamic adjustment of `e`
     uint32 public expN = 105;
     uint32 public expD = 100;
 
@@ -79,12 +90,17 @@ contract GovernorCharlieDelegate is
         require(msg.sender == admin, "GovernorCharlie::eUpdate: admin only");
         expN = newExpN;
         expD = newExpD;
-    } 
+    }
 
     /** 
      * @notice Chainlink: Requests randomness 
      */
     function requestFlagedRandomness() public returns (bytes32 requestId) {
+        require(
+            flagedRandoms[requestId].returnTimestamp == 0,
+            "Cannot request random number again"
+        );
+        
         require(LINK.balanceOf(address(this)) >= fee, "Not enough LINK - fill contract with faucet");
         /* return */ requestId = requestRandomness(keyHash, fee);
         
@@ -100,17 +116,18 @@ contract GovernorCharlieDelegate is
     function fulfillRandomness(bytes32 requestId, uint256 randomness) internal override {
         flagedRandoms[requestId].randomValue = randomness;
         flagedRandoms[requestId].returnTimestamp = block.timestamp;
+        // flagedRandoms[requestId].request = true;
     }
 
     /**
-      * @notice Used to initialize the contract during delegator contructor
+      * @notice Used to initialize the contract during delegator constructor
       * @param timelock_ The address of the Timelock
       * @param comp_ The address of the COMP token
       * @param votingPeriod_ The initial voting period
       * @param votingDelay_ The initial voting delay
       * @param proposalThreshold_ The initial proposal threshold
       */
-    function initialize(address timelock_, address comp_, uint votingPeriod_, uint votingDelay_, uint proposalThreshold_) public {
+    function initialize(address timelock_, address comp_, uint votingPeriod_, uint votingDelay_, uint proposalThreshold_, uint aggregatingPeriod_) virtual public {
         require(address(timelock) == address(0), "GovernorCharlie::initialize: can only initialize once");
         require(msg.sender == admin, "GovernorCharlie::initialize: admin only");
         require(timelock_ != address(0), "GovernorCharlie::initialize: invalid timelock address");
@@ -118,13 +135,15 @@ contract GovernorCharlieDelegate is
         require(votingPeriod_ >= MIN_VOTING_PERIOD && votingPeriod_ <= MAX_VOTING_PERIOD, "GovernorCharlie::initialize: invalid voting period");
         require(votingDelay_ >= MIN_VOTING_DELAY && votingDelay_ <= MAX_VOTING_DELAY, "GovernorCharlie::initialize: invalid voting delay");
         require(proposalThreshold_ >= MIN_PROPOSAL_THRESHOLD && proposalThreshold_ <= MAX_PROPOSAL_THRESHOLD, "GovernorCharlie::initialize: invalid proposal threshold");
+        require(aggregatingPeriod_ >= MIN_AGGREGATING_PERIOD && aggregatingPeriod_ <= MAX_AGGREGATING_PERIOD, "GovernorCharlie::initialize: invalid aggregating period");
 
         timelock = TimelockInterface(timelock_);
         comp = CompInterface(comp_);
         votingPeriod = votingPeriod_;
         votingDelay = votingDelay_;
         proposalThreshold = proposalThreshold_;
-        
+        aggregatingPeriod = aggregatingPeriod_;
+
         timelock.acceptAdmin();
 
         initFractionalExponents();
@@ -158,6 +177,7 @@ contract GovernorCharlieDelegate is
 
         proposalCount++;
         Proposal storage newProposal = proposals[proposalCount];
+        PqvMeta storage newPqvMeta = pqvMetas[proposalCount];
 
         newProposal.id = proposalCount;
         newProposal.proposer = msg.sender;
@@ -171,17 +191,19 @@ contract GovernorCharlieDelegate is
         newProposal.startBlock = startBlock;
         newProposal.endBlock = endBlock;
 
-        newProposal.baseFlagedRandom = 0;
-
         newProposal.forVotes = 0;
         newProposal.againstVotes = 0;
         newProposal.abstainVotes = 0;
-        // newProposal.maxOfVotes = 0; // TODO: [Governor-D]
 
         newProposal.canceled = false;
         newProposal.executed = false;
-        newProposal.finalizedTime = 0;
-        
+
+        newPqvMeta.baseFlagedRandom = 0;
+        newPqvMeta.finalizedTime = 0;
+        newPqvMeta.aggregatedForVotes = 0;
+        newPqvMeta.aggregatedAgainstVotes = 0;
+        newPqvMeta.aggregatedAbstainVotes = 0;
+
         latestProposalIds[newProposal.proposer] = newProposal.id;
 
         emit ProposalCreated(newProposal.id, msg.sender, targets, values, signatures, calldatas, startBlock, endBlock, description);
@@ -241,7 +263,7 @@ contract GovernorCharlieDelegate is
                 require((comp.getPriorVotes(proposal.proposer, block.number - 1) < proposalThreshold), "GovernorCharlie::cancel: proposer above threshold");
             }
         }
-        
+
         proposal.canceled = true;
         for (uint i = 0; i < proposal.targets.length; i++) {
             timelock.cancelTransaction(proposal.targets[i], proposal.values[i], proposal.signatures[i], proposal.calldatas[i], proposal.eta);
@@ -274,7 +296,7 @@ contract GovernorCharlieDelegate is
     }
 
     /**
-     * @notice Gets the expectation value
+     * @notice Gets the expectation value (EQV)
      */
     function pqvExpect(uint proposalId) public view returns (
         bool isSucceeded, uint aggregatedForVotes, uint aggregatedAgainstVotes, uint aggregatedAbstainVotes
@@ -288,17 +310,20 @@ contract GovernorCharlieDelegate is
             Receipt memory receipt = proposal.receipts[participant];
 
             // accumulating
-            uint256 res; // TODO: [Governor-D] log_(maxOfVotes)(N) for optimized `e`
+            uint256 res;
             uint8 prec;
             (res, prec) = power(receipt.votes, 1, expN, expD);
             res /= 2 ** prec; // result
 
             if (receipt.support == 0) {
-                aggregatedAgainstVotes += sqrt(receipt.votes) * res / N;
+                if (res >= N) { aggregatedAgainstVotes += sqrt(receipt.votes); }
+                else { aggregatedAgainstVotes += sqrt(receipt.votes) * res / N; }
             } else if (receipt.support == 1) {
-                aggregatedForVotes += sqrt(receipt.votes) * res / N;
+                if (res >= N) { aggregatedForVotes += sqrt(receipt.votes); }
+                else { aggregatedForVotes += sqrt(receipt.votes) * res / N; }
             } else if (receipt.support == 2) {
-                aggregatedAbstainVotes += sqrt(receipt.votes) * res / N;
+                if (res >= N) { aggregatedAbstainVotes += sqrt(receipt.votes); }
+                else { aggregatedAbstainVotes += sqrt(receipt.votes) * res / N; }
             }
         }
 
@@ -314,15 +339,17 @@ contract GovernorCharlieDelegate is
     function state(uint proposalId) public view returns (ProposalState) {
         require(proposalCount >= proposalId, "GovernorCharlie::state: invalid proposal id");
         Proposal storage proposal = proposals[proposalId];
+        PqvMeta storage pqvMeta = pqvMetas[proposalId];
+
         if (proposal.canceled) {
             return ProposalState.Canceled;
         } else if (block.number <= proposal.startBlock) {
             return ProposalState.Pending;
         } else if (block.number <= proposal.endBlock) {
             return ProposalState.Active;
-        } else if (/* Finalized condition */ proposal.finalizedTime == 0) {
-            return ProposalState.Unfinalized;
-        } else if (/* PQV */ pqvInternal(proposalId)) {
+        } else if (/* Finalized condition */ !isFinalizeInternal(proposalId)) {
+            return ProposalState.Pending;
+        } else if (/* PQV */ pqvResultInternal(proposalId)) {
             return ProposalState.Defeated;
         } else if (proposal.eta == 0) {
             return ProposalState.Succeeded;
@@ -335,78 +362,141 @@ contract GovernorCharlieDelegate is
         }
     }
 
-    function pqvInternal(uint proposalId) internal view returns (bool) {        
+    /**
+      * @notice Finalize a vote for a proposal
+      * @param proposalId The id of the proposal to finalize on
+      */
+    function finalizeVote(uint proposalId) external {
+        emit FinalizeCast(msg.sender, proposalId, finalizeVoteInternal(msg.sender, proposalId));
+    }
+
+    /**
+      * @notice Finalize a vote for a proposal by signature
+      * @dev External function that accepts EIP-712 signatures for finalizing on proposals.
+      */
+    function finalizeVoteBySig(uint proposalId, uint8 v, bytes32 r, bytes32 s) external {
+        bytes32 domainSeparator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), block.chainid, address(this)));
+        bytes32 structHash = keccak256(abi.encode(FINALIZE_TYPEHASH, proposalId));
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
+        address signatory = ecrecover(digest, v, r, s);
+        require(signatory != address(0), "GovernorCharlie::finalizeVoteBySig: invalid signature");
+        
+        emit FinalizeCast(signatory, proposalId, finalizeVoteInternal(signatory, proposalId));
+    }
+
+    /**
+      * @notice Internal function that caries out finalizing logic
+      * @param voter The voter that is finalizing their vote
+      * @param proposalId The id of the proposal to finalize on
+      * @return The number of votes finalized
+      */
+    function finalizeVoteInternal(address voter, uint proposalId) internal returns (uint96) {
         Proposal storage proposal = proposals[proposalId];
+        PqvMeta storage pqvMeta = pqvMetas[proposalId];
+        Receipt storage receipt = proposal.receipts[voter];
 
-        uint N = proposal.forVotes + proposal.againstVotes + proposal.abstainVotes;
-        uint aggregatedForVotes = 0;
-        uint aggregatedAgainstVotes = 0;
-        uint aggregatedAbstainVotes = 0;
-
-        for (uint i = 0; i < participants[proposalId].length; i++) {
-            address participant = participants[proposalId][i];
-            Receipt memory receipt = proposal.receipts[participant];
-
-            // timestamp check
-            FlagedRandom memory indivRandom = flagedRandoms[receipt.myFlagedRandom]; // Individual random number
-            if(indivRandom.returnTimestamp > proposal.finalizedTime) { continue; }
-            else if (indivRandom.returnTimestamp == 0) { continue; }
-
-            // random
-            FlagedRandom memory baseRandom = flagedRandoms[proposal.baseFlagedRandom]; // Base random number
-            uint finalRandomValue = baseRandom.randomValue ^ indivRandom.randomValue;
-            uint256 res; // TODO: [Governor-D] log_(maxOfVotes)(N) for optimized `e`
-            uint8 prec;
-            (res, prec) = power(receipt.votes, 1, expN, expD);
-            res /= 2 ** prec; // result
-            if (res <= (finalRandomValue % N)) { continue; }
-
-            // accumulating
-            if (receipt.support == 0) {
-                aggregatedAgainstVotes += sqrt(receipt.votes);
-            } else if (receipt.support == 1) {
-                aggregatedForVotes += sqrt(receipt.votes);
-            } else if (receipt.support == 2) {
-                aggregatedAbstainVotes += sqrt(receipt.votes);
-            }
+        if (!isFinalizeInternal(proposalId)) {
+            finalize(proposalId);
         }
 
+        require(
+            (block.number > proposal.endBlock) && (block.number <= proposal.endBlock + aggregatingPeriod) &&
+            (state(proposalId) == ProposalState.Pending),
+            "GovernorCharlie::finalizeVoteInternal: finalizing stage is closed"
+        );
+
+        require(
+            receipt.hasVoted == true,
+            "GovernorCharlie::finalizeVoteInternal: voter should be voted"
+        );
+
+        bytes32 myFlagedRandom = myFlagedRandoms[proposalId][voter];
+        FlagedRandom memory indivRandom = flagedRandoms[myFlagedRandom]; // Individual random number
+        require(
+            (indivRandom.returnTimestamp != 0) &&
+            (indivRandom.returnTimestamp <= pqvMeta.finalizedTime),
+            "GovernorCharlie::finalizeVoteInternal: not a valid random"
+        );
+
+        uint N = proposal.forVotes + proposal.againstVotes + proposal.abstainVotes;
+
+        // random
+        FlagedRandom memory baseRandom = flagedRandoms[pqvMeta.baseFlagedRandom]; // Base random number
+        uint finalRandomValue = baseRandom.randomValue ^ indivRandom.randomValue;
+        uint256 res;
+        uint8 prec;
+        (res, prec) = power(receipt.votes, 1, expN, expD);
+        res /= 2 ** prec; // result
+
+        if (res <= (finalRandomValue % N)) {
+            return 0;
+        }
+
+        // accumulating
+        if (receipt.support == 0) {
+            pqvMeta.aggregatedAgainstVotes += sqrt(receipt.votes);
+        } else if (receipt.support == 1) {
+            pqvMeta.aggregatedForVotes += sqrt(receipt.votes);
+        } else if (receipt.support == 2) {
+            pqvMeta.aggregatedAbstainVotes += sqrt(receipt.votes);
+        }
+
+        return receipt.votes;
+    }
+
+    function pqvResultInternal(uint proposalId) internal view returns (bool) {
+        Proposal storage proposal = proposals[proposalId];
+        PqvMeta storage pqvMeta = pqvMetas[proposalId];
+
         // proposal.forVotes <= proposal.againstVotes || proposal.forVotes < quorumVotes
-        return (aggregatedForVotes <= aggregatedAgainstVotes) || (aggregatedForVotes < (quorumVotes * aggregatedForVotes / proposal.forVotes));
+        return (
+            (pqvMeta.aggregatedForVotes <= pqvMeta.aggregatedAgainstVotes) ||
+            (pqvMeta.aggregatedForVotes < (quorumVotes * pqvMeta.aggregatedForVotes / proposal.forVotes)) // scaling
+        );
     }
 
     /**
-     * @notice Request base random
+     * @notice Return false if unfinalized
      */
-    function requestBaseFlagedRandom(uint proposalId) external {
+    function isFinalizeInternal(uint proposalId) internal view returns (bool) {
+        Proposal storage proposal = proposals[proposalId];
+        PqvMeta storage pqvMeta = pqvMetas[proposalId];
+
+        if (block.number > proposal.endBlock + aggregatingPeriod) {
+            // TODO: error exception
+            return true;
+        }
+        else if (flagedRandoms[pqvMeta.baseFlagedRandom].returnTimestamp == 0) {
+            return false;
+        }
+        else {
+            return true;
+        }
+    }
+
+    /**
+     * @notice Finalize the proposal
+     */
+    function finalize(uint proposalId) public {
+        Proposal storage proposal = proposals[proposalId];
+        PqvMeta storage pqvMeta = pqvMetas[proposalId];
         require(
-            state(proposalId) == ProposalState.Unfinalized,
+            block.number > proposal.endBlock,
             "GovernorCharlie::requestBaseFlagedRandom: voting is already finalized"
         );
-        Proposal storage proposal = proposals[proposalId];
-        require(
-            flagedRandoms[proposal.baseFlagedRandom].returnTimestamp == 0,
-            "GovernorCharlie::requestBaseFlagedRandom: random number is already returned"
-        );
-        proposal.baseFlagedRandom = requestFlagedRandomness();
-    }
 
-    /**
-     * @notice Finalize active state for pqv round
-     */
-    function finalize(uint proposalId) external {
-        require(
-            state(proposalId) == ProposalState.Unfinalized,
-            "GovernorCharlie::finalize: voting is already finalized"
-        );
-        Proposal storage proposal = proposals[proposalId];
-        require(
-            flagedRandoms[proposal.baseFlagedRandom].returnTimestamp != 0,
-            "GovernorCharlie::finalize: random number is not yet returned"
-        );
-        proposal.finalizedTime = block.timestamp;
-
-        emit ProposalFinalized(proposalId);
+        if (block.number > proposal.endBlock + aggregatingPeriod) {
+            // TODO: error exception
+        }
+        else if (flagedRandoms[pqvMeta.baseFlagedRandom].returnTimestamp == 0) {
+            pqvMeta.baseFlagedRandom = requestFlagedRandomness(); // request base random
+        }
+        else {
+            if (pqvMeta.finalizedTime != 0) {
+                pqvMeta.finalizedTime = block.timestamp; // finalize
+                emit ProposalFinalized(proposalId);
+            }
+        }
     }
 
     /**
@@ -456,25 +546,20 @@ contract GovernorCharlieDelegate is
         require(receipt.hasVoted == false, "GovernorCharlie::castVoteInternal: voter already voted");
         uint96 votes = comp.getPriorVotes(voter, proposal.startBlock);
 
-        // TODO: [Governor-D]
-        // if (proposal.maxOfVotes < votes) {
-        //     proposal.maxOfVotes = votes;
-        // }
-
         if (support == 0) {
-            proposal.againstVotes = proposal.againstVotes + votes;
+            proposal.againstVotes += votes;
         } else if (support == 1) {
-            proposal.forVotes = proposal.forVotes + votes;
+            proposal.forVotes += votes;
         } else if (support == 2) {
-            proposal.abstainVotes = proposal.abstainVotes + votes;
+            proposal.abstainVotes += votes;
         }
 
         participants[proposalId].push(voter);
-
         receipt.hasVoted = true;
         receipt.support = support;
         receipt.votes = votes;
-        receipt.myFlagedRandom = requestFlagedRandomness();
+        
+        myFlagedRandoms[proposalId][voter] = requestFlagedRandomness();
 
         return votes;
     }
@@ -512,6 +597,19 @@ contract GovernorCharlieDelegate is
         votingPeriod = newVotingPeriod;
 
         emit VotingPeriodSet(oldVotingPeriod, votingPeriod);
+    }
+
+    /**
+      * @notice Admin function for setting the aggregating period
+      * @param newAggregatingPeriod new aggregating period, in blocks
+      */
+    function _setAggregatingPeriod(uint newAggregatingPeriod) external {
+        require(msg.sender == admin, "GovernorCharlie::_setAggregatingPeriod: admin only");
+        require(newAggregatingPeriod >= MIN_AGGREGATING_PERIOD && newAggregatingPeriod <= MAX_AGGREGATING_PERIOD, "GovernorCharlie::_setAggregatingPeriod: invalid aggregating period");
+        uint oldAggregatingPeriod = aggregatingPeriod;
+        aggregatingPeriod = newAggregatingPeriod;
+
+        emit AggregatingPeriodSet(oldAggregatingPeriod, aggregatingPeriod);
     }
 
     /**

@@ -1,15 +1,8 @@
-/*
-    References
-    
-    https://github.com/compound-finance/compound-protocol/blob/master/contracts/Governance/GovernorBravoInterfaces.sol
-*/
-
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: BSD-3-Clause
 
 pragma solidity ^0.8.0;
 
-
-contract GovernorCharlieEvents {
+contract GovernorBravoEvents {
     /// @notice An event emitted when a new proposal is created
     event ProposalCreated(uint id, address proposer, address[] targets, uint[] values, string[] signatures, bytes[] calldatas, uint startBlock, uint endBlock, string description);
 
@@ -23,9 +16,6 @@ contract GovernorCharlieEvents {
 
     /// @notice An event emitted when a proposal has been canceled
     event ProposalCanceled(uint id);
-
-    /// @notice An event emitted when a proposal has been finalized
-    event ProposalFinalized(uint id);
 
     /// @notice An event emitted when a proposal has been queued in the Timelock
     event ProposalQueued(uint id, uint eta);
@@ -58,7 +48,18 @@ contract GovernorCharlieEvents {
     event WhitelistGuardianSet(address oldGuardian, address newGuardian);
 }
 
-contract GovernorCharlieDelegatorStorage {
+contract GovernorCharlieEvents is GovernorBravoEvents {
+    /// @notice An event emitted when a proposal has been finalized
+    event ProposalFinalized(uint id);
+
+    /// @notice An event emitted when a single vote has been finalized
+    event FinalizeCast(address indexed voter, uint proposalId, uint votes);
+
+    /// @notice An event emitted when the aggregating period is set
+    event AggregatingPeriodSet(uint oldAggregatingPeriod, uint newAggregatingPeriod);
+}
+
+contract GovernorBravoDelegatorStorage {
     /// @notice Administrator for this contract
     address public admin;
 
@@ -69,14 +70,15 @@ contract GovernorCharlieDelegatorStorage {
     address public implementation;
 }
 
+contract GovernorCharlieDelegatorStorage is GovernorBravoDelegatorStorage { }
 
 /**
- * @title Storage for Governor Charlie Delegate
- * @notice For future upgrades, do not change GovernorCharlieDelegateStorageV1. Create a new
- * contract which implements GovernorCharlieDelegateStorageV1 and following the naming convention
- * GovernorCharlieDelegateStorageVX.
+ * @title Storage for Governor Bravo Delegate
+ * @notice For future upgrades, do not change GovernorBravoDelegateStorageV1. Create a new
+ * contract which implements GovernorBravoDelegateStorageV1 and following the naming convention
+ * GovernorBravoDelegateStorageVX.
  */
-contract GovernorCharlieDelegateStorageV1 is GovernorCharlieDelegatorStorage {
+contract GovernorBravoDelegateStorageV1 is GovernorBravoDelegatorStorage {
 
     /// @notice The delay before voting on a proposal may take place, once proposed, in blocks
     uint public votingDelay;
@@ -105,12 +107,6 @@ contract GovernorCharlieDelegateStorageV1 is GovernorCharlieDelegatorStorage {
     /// @notice The latest proposal for each proposer
     mapping (address => uint) public latestProposalIds;
 
-    // Chainlink Random
-    struct FlagedRandom {
-        uint randomValue;
-        uint returnTimestamp;
-    }
-    mapping (bytes32 => FlagedRandom) public flagedRandoms;
 
     struct Proposal {
         /// @notice Unique id for looking up a proposal
@@ -140,21 +136,14 @@ contract GovernorCharlieDelegateStorageV1 is GovernorCharlieDelegatorStorage {
         /// @notice The block at which voting ends: votes must be cast prior to this block
         uint endBlock;
 
-        /// @notice bytes32 to FlagedRandom
-        bytes32 baseFlagedRandom;
-
-        /// @notice Total number of votes in favor of this proposal
+        /// @notice Current number of votes in favor of this proposal
         uint forVotes;
 
-        /// @notice Total number of votes in opposition to this proposal
+        /// @notice Current number of votes in opposition to this proposal
         uint againstVotes;
 
-        /// @notice Total number of votes for abstaining for this proposal
+        /// @notice Current number of votes for abstaining for this proposal
         uint abstainVotes;
-
-        // TODO
-        // /// @notice Maximum value among all votes
-        // uint maxOfVotes;
 
         /// @notice Flag marking whether the proposal has been canceled
         bool canceled;
@@ -162,15 +151,9 @@ contract GovernorCharlieDelegateStorageV1 is GovernorCharlieDelegatorStorage {
         /// @notice Flag marking whether the proposal has been executed
         bool executed;
 
-        /// @notice Flag marking whether the proposal has been finalized for aggregating
-        uint finalizedTime;
-
         /// @notice Receipts of ballots for the entire set of voters
         mapping (address => Receipt) receipts;
     }
-
-    /// @notice Keys for `receipts` mapping
-    mapping (uint => address[]) public participants;
 
     /// @notice Ballot receipt record for a voter
     struct Receipt {
@@ -182,13 +165,9 @@ contract GovernorCharlieDelegateStorageV1 is GovernorCharlieDelegatorStorage {
 
         /// @notice The number of votes the voter had, which were cast
         uint96 votes;
-
-        /// @notice Indivisual random number
-        bytes32 myFlagedRandom;
     }
 
     /// @notice Possible states that a proposal may be in
-    /// @dev Add `Unfinalized` state - represent that the proposal is ready to get a `baseRandom` number
     enum ProposalState {
         Pending,
         Active,
@@ -197,17 +176,57 @@ contract GovernorCharlieDelegateStorageV1 is GovernorCharlieDelegatorStorage {
         Succeeded,
         Queued,
         Expired,
-        Executed,
-        Unfinalized // for PQV's random aggregation round
+        Executed
     }
 }
 
-contract GovernorCharlieDelegateStorageV2 is GovernorCharlieDelegateStorageV1 {
+contract GovernorBravoDelegateStorageV2 is GovernorBravoDelegateStorageV1 {
     /// @notice Stores the expiration of account whitelist status as a timestamp
     mapping (address => uint) public whitelistAccountExpirations;
 
     /// @notice Address which manages whitelisted proposals and whitelist accounts
     address public whitelistGuardian;
+}
+
+contract GovernorCharlieDelegateStorage is GovernorBravoDelegateStorageV2 {
+    /// @notice The duration of aggregating on a proposal, in blocks
+    uint public aggregatingPeriod;
+
+    /// @notice Struct for Chainlink random
+    struct FlagedRandom {
+        uint randomValue;
+        uint returnTimestamp;
+    }
+
+    /// @notice Global mapping for Chainlink random
+    mapping (bytes32 => FlagedRandom) public flagedRandoms; // Chainlink Random
+    
+    /// @notice Extra proposal metadata for PQV
+    struct PqvMeta {
+        /// @notice Base random number
+        bytes32 baseFlagedRandom;
+
+        /// @notice Flag marking whether the proposal has been finalized for aggregating
+        uint finalizedTime;
+        
+        /// @notice Aggregated number of votes in favor of this proposal
+        uint aggregatedForVotes;
+
+        /// @notice Aggregated number of votes in opposition to this proposal
+        uint aggregatedAgainstVotes;
+
+        /// @notice Aggregated number of votes for abstaining for this proposal
+        uint aggregatedAbstainVotes;
+    }
+
+    /// @notice Global mapping for PQV metadata
+    mapping (uint => PqvMeta) public pqvMetas;
+
+    /// @notice Keys for `receipts` mapping
+    mapping (uint => address[]) public participants;
+
+    /// @notice Indivisual random number
+    mapping (uint => mapping (address => bytes32)) public myFlagedRandoms;
 }
 
 interface TimelockInterface {
