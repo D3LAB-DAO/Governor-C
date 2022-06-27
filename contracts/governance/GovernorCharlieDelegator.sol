@@ -12,13 +12,13 @@ import "./GovernorCharlieInterfaces.sol";
  */
 contract GovernorCharlieDelegator is GovernorCharlieDelegatorStorage, GovernorCharlieEvents {
 	constructor(
-			address timelock_,
-			address comp_,
-			address admin_,
-	        address implementation_,
-	        uint votingPeriod_,
-	        uint votingDelay_,
-            uint proposalThreshold_
+		address timelock_,
+		address comp_,
+		address admin_,
+		address implementation_,
+		uint votingPeriod_,
+		uint votingDelay_,
+		uint proposalThreshold_
     ) {
 
         // Admin set to msg.sender for initialization
