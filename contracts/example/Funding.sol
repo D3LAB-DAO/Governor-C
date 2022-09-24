@@ -5,7 +5,12 @@ pragma solidity ^0.8.0;
 import "../governance/GovernorCharlieDelegate.sol";
 
 contract Funding is GovernorCharlieDelegate {
-    event AddItem(address indexed grantee, uint256 rid, uint256 indexed pid);
+    event SetRound(uint256 indexed rid);
+    event AddItem(address indexed grantee, uint256 rid, uint256 indexed iid);
+
+    event DoFunding(address indexed grantor, uint256 amount, uint256 rid);
+    event DoRefunding(address indexed grantor, uint256 amount, uint256 rid);
+    event Claim(address indexed grantee, uint256 rid, uint256 indexed iid);
 
     // TODO: max and min
     /// @notice The round period
@@ -47,6 +52,7 @@ contract Funding is GovernorCharlieDelegate {
         Round storage round = rounds[rid];
         round.start = block.timestamp;
 
+        emit SetRound(rid);
         return rid;
     }
 
@@ -107,6 +113,8 @@ contract Funding is GovernorCharlieDelegate {
         require(msg.value > 0);
         amounts[msg.sender] += msg.value;
         rounds[rid].totalAmounts += msg.value;
+
+        emit DoFunding(msg.sender, msg.value, rid);
         return rid;
     }
 
@@ -120,6 +128,8 @@ contract Funding is GovernorCharlieDelegate {
         rounds[rid].totalAmounts -= amount;
         (bool succeed, ) = msg.sender.call{value: amount}("");
         require(succeed, "Funding::refunding: transfer error");
+
+        emit DoRefunding(msg.sender, amount, rid);
         return rid;
     }
 
@@ -172,5 +182,7 @@ contract Funding is GovernorCharlieDelegate {
         require(succeed, "Funding::claim: transfer error");
 
         grantee.granted = true;
+
+        emit Claim(grantee.account, rid, iid);
     }
 }
